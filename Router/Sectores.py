@@ -70,3 +70,17 @@ def actualizar_subsectores(request: Request, db: Session = Depends(get_db)):
     data = getattr(request.state, "json_data", {})
     response = Sectores(db).actualizar_subsectores(data)
     return response
+
+@sectores_router.post('/actualizar_cliente', tags=["Sectores"], response_model=dict)
+@http_decorator
+def actualizar_cliente(request: Request, db: Session = Depends(get_db)):
+    data = getattr(request.state, "json_data", {})
+    response = Sectores(db).actualizar_cliente(data)
+    return response
+
+@sectores_router.post('/obtener_clientes', tags=["Terceros"], response_model=dict)
+@http_decorator
+def obtener_clientes(request: Request, db: Session = Depends(get_db)):
+    data = getattr(request.state, "json_data", {})
+    response = Sectores(db).obtener_clientes(data)
+    return response

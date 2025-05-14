@@ -22,6 +22,13 @@ class Sectores:
                     
                     # Llamamos a la función para insertar los subsectores.
                     self.insertar_subsectores(anio, key)
+                    
+                # Query para traer todos los terceros
+                terceros = self.querys.obtener_todos_terceros()
+                if terceros:
+                    for ter in terceros:
+                        # Guardamos los valores de terceros en la base de datos.
+                        self.querys.guardar_terceros_crecimiento(anio, ter, sectores)
             
             # Retornamos la información.
             return self.tools.output(200, "Proceso guardado con éxito.")
@@ -113,10 +120,10 @@ class Sectores:
 
         try:
             # Capturamos el primer carácter del parámetro 'sector'.
-            primer_caracter_sector = str(key['concepto'])[0]
+            # primer_caracter_sector = str(key['concepto'])[0]
 
             # Obtenemos los subsectores registrados en la base de datos.
-            subsectores = self.querys.obtener_subsectores(primer_caracter_sector)
+            subsectores = self.querys.obtener_subsectores(str(key['concepto']))
             
             # Insertamos los subsectores en la base de datos.
             for subsector in subsectores:
@@ -150,6 +157,33 @@ class Sectores:
             
             # Retornamos la información.
             return self.tools.output(200, "Datos actualizados.")
+
+        except CustomException as e:
+            print(f"Error al guardar solicitud: {e}")
+            raise e
+
+    # Función para actualizar los subsectores en la base de datos.
+    def actualizar_cliente(self, data: dict):
+        """ Api que realiza la consulta de los estados. """
+        try:
+            # Actualizamos los subsectores en la base de datos.
+            self.querys.actualizar_cliente(data)
+            
+            # Retornamos la información.
+            return self.tools.output(200, "Datos actualizados.")
+
+        except CustomException as e:
+            print(f"Error al guardar solicitud: {e}")
+            raise e
+
+    # Función para obtener los clientes registrados en la base de datos.
+    def obtener_clientes(self, data):
+        try:
+            # Obtenemos los clientes registrados en la base de datos.
+            clientes = self.querys.obtener_clientes(data)
+            
+            # Retornamos la información.
+            return self.tools.output(200, "Datos encontrados.", clientes)
 
         except CustomException as e:
             print(f"Error al guardar solicitud: {e}")

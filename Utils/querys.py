@@ -166,16 +166,19 @@ class Querys:
     # Query para mostrar todos los sectores.
     def obtener_sectores(self):
         try:
+            # sql = """
+            #     SELECT * FROM terceros_12 WHERE activo  = 'S' AND concepto_12 NOT IN ('ZZZZ', '50');
+            # """
             sql = """
-                SELECT * FROM terceros_12 WHERE activo  = 'S' AND concepto_12 NOT IN ('ZZZZ', '50');
+                SELECT id_sector, sector FROM dbo.proyecta_sectores group by id_sector, sector;
             """
             query = self.db.execute(text(sql)).fetchall()
 
             # Retornar directamente una lista de diccionarios
             return [
                 {
-                    "concepto_12": key.concepto_12, 
-                    "descripcion": key.descripcion
+                    "concepto_12": key.id_sector, 
+                    "descripcion": key.sector
                 } for key in query] if query else []
                 
         except Exception as ex:
@@ -278,18 +281,21 @@ class Querys:
             self.db.close()
 
     # Query para obtener los subsectores.
-    def obtener_subsectores(self, primer_caracter_sector: str):
+    def obtener_subsectores(self, sector: str):
         try:
+            # sql = """
+            #     SELECT * FROM terceros_14 WHERE concepto_14 LIKE :sector
+            # """
             sql = """
-                SELECT * FROM terceros_14 WHERE concepto_14 LIKE :sector
+                select * from dbo.proyecta_sectores where id_sector = :sector
             """
-            query = self.db.execute(text(sql), {"sector": f"{primer_caracter_sector}%"}).fetchall()
+            query = self.db.execute(text(sql), {"sector": f"{sector}"}).fetchall()
 
             # Retornar directamente una lista de diccionarios
             return [
                 {
-                    "concepto_14": key.concepto_14, 
-                    "descripcion": key.descripcion.upper()
+                    "concepto_14": key.id_subsector, 
+                    "descripcion": key.subsector.upper()
                 } for key in query] if query else []
                 
         except Exception as ex:
@@ -402,6 +408,31 @@ class Querys:
         finally:
             self.db.close()
 
+    # Query para actualizar los subsectores.
+    def actualizar_cliente(self, data: dict):
+        try:
+            sql = """
+                UPDATE dbo.proyecta_terceros_crecimiento
+                SET porcentaje_cliente = :porcentaje_cliente
+                WHERE anio = :anio AND id = :id AND estado = 1;
+            """
+            self.db.execute(
+                text(sql), 
+                {
+                    "id": int(data['id']),
+                    "anio": int(data['anio']),
+                    "porcentaje_cliente": round(float(data['porcentaje_cliente']), 2)
+                }
+            )
+            self.db.commit()               
+                
+        except Exception as ex:
+            print("Error al guardar:", ex)
+            self.db.rollback()
+            raise CustomException("Error al guardar.")
+        finally:
+            self.db.close()
+
     def actualizar_subsectores_general(self, data: dict):
         try:
             sql = """
@@ -423,5 +454,95 @@ class Querys:
             print("Error al guardar:", ex)
             self.db.rollback()
             raise CustomException("Error al guardar.")
+        finally:
+            self.db.close()
+            
+    # Query para obtener todos los terceros.
+    def obtener_todos_terceros(self):
+        try:
+            sql = """
+                SELECT * FROM dbo.v_terceros_sectores;
+            """
+            query = self.db.execute(text(sql)).fetchall()
+
+            # Retornar directamente una lista de diccionarios
+            return [
+                {
+                    "nit_real": key.nit_real, 
+                    "nit": key.nit,
+                    "nombres": key.nombres,
+                    "id_sector": key.id_sector,
+                    "sector": key.sector,
+                    "id_subsector": key.id_subsector,
+                    "subsector": key.subsector
+                } for key in query] if query else []
+                
+        except Exception as ex:
+            print(str(ex))
+            raise CustomException(str(ex))
+        finally:
+            self.db.close()
+
+    # Query para guardar los terceros en la base de datos.
+    def guardar_terceros_crecimiento(self, anio, ter, sectores):
+        try:
+                        
+            sector_porcentaje = next((item['porcentaje'] for item in sectores if item['concepto'] == int(ter['id_sector'])), None)
+            
+            # Insertamos los terceros en la base de datos.
+            sql = """
+                INSERT INTO dbo.proyecta_terceros_crecimiento (anio, nit_real, nit, nombre, sector, porcentaje_sector, subsector, porcentaje_subsector, porcentaje_cliente, created_at)
+                VALUES (:anio, :nit_real, :nit, :nombre, :sector, :porcentaje_sector, :subsector, :porcentaje_subsector, :porcentaje_cliente, :created_at);
+            """
+            self.db.execute(
+                text(sql), 
+                {
+                    "anio": anio,
+                    "nit_real": ter['nit_real'],
+                    "nit": ter['nit'],
+                    "nombre": ter['nombres'],
+                    "sector": ter['id_sector'] if ter['id_sector'] else None,
+                    "porcentaje_sector": round(float(sector_porcentaje), 2) if sector_porcentaje else 0,
+                    "subsector": ter['id_subsector'] if ter['id_subsector'] else None,
+                    "porcentaje_subsector": round(float(sector_porcentaje), 2) if sector_porcentaje else 0,
+                    "porcentaje_cliente": round(float(sector_porcentaje), 2) if sector_porcentaje else 0,
+                    "created_at": datetime.now()
+                }
+            )
+            self.db.commit()               
+                
+        except Exception as ex:
+            print("Error al guardar:", ex)
+            self.db.rollback()
+            raise CustomException("Error al guardar.")
+        finally:
+            self.db.close()
+            
+    def obtener_clientes(self, data):
+        try:
+            sql = """
+                SELECT * FROM dbo.proyecta_terceros_crecimiento WHERE anio = :anio AND sector = :sector AND estado = 1;
+            """
+            query = self.db.execute(text(sql), {"anio": data['anio'], "sector": data['sector']}).fetchall()
+
+            # Retornar directamente una lista de diccionarios
+            return [
+                {
+                    "id": key.id, 
+                    "anio": key.anio,
+                    "nit_real": key.nit_real,
+                    # "nit": key.nit,
+                    "nombre": key.nombre,
+                    # "sector": key.sector,
+                    # "porcentaje_sector": key.porcentaje_sector,
+                    # "subsector": key.subsector,
+                    # "porcentaje_subsector": key.porcentaje_subsector,
+                    "porcentaje_cliente": key.porcentaje_cliente,
+                    "created_at": self.tools.format_date(str(key.created_at), "%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S") if str(key.created_at) else '',
+                } for key in query] if query else []
+                
+        except Exception as ex:
+            print(str(ex))
+            raise CustomException(str(ex))
         finally:
             self.db.close()

@@ -64,9 +64,14 @@ class Tools:
 
     # Función para formatear las fechas    
     def format_date(self, date, normal_format, output_format):
-        fecha_objeto = datetime.strptime(date, normal_format)
-        fecha_formateada = fecha_objeto.strftime(output_format)
-        return fecha_formateada
+        try:
+            fecha_objeto = datetime.strptime(date, normal_format)
+            fecha_formateada = fecha_objeto.strftime(output_format)
+            return fecha_formateada
+        except ValueError:
+            fecha_objeto = datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
+            fecha_formateada = fecha_objeto.strftime(output_format)
+            return fecha_formateada
 
     # Función para formatear las fechas    
     def format_date2(self, date):
