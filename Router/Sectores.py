@@ -84,3 +84,10 @@ def obtener_clientes(request: Request, db: Session = Depends(get_db)):
     data = getattr(request.state, "json_data", {})
     response = Sectores(db).obtener_clientes(data)
     return response
+
+@sectores_router.post('/get_subsector_by_sector', tags=["Terceros"], response_model=dict)
+@http_decorator
+def get_subsector_by_sector(request: Request, db: Session = Depends(get_db)):
+    data = getattr(request.state, "json_data", {})
+    response = Sectores(db).get_subsector_by_sector(data)
+    return response

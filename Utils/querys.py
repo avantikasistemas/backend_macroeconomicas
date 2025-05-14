@@ -517,32 +517,121 @@ class Querys:
             raise CustomException("Error al guardar.")
         finally:
             self.db.close()
-            
+    
+    # Query para obtener los terceros insertados.        
     def obtener_clientes(self, data):
         try:
+            
+            cant_registros = 0
+            limit = data["limit"]
+            position = data["position"]
+            result = {"registros": [], "cant_registros": 0}
+            response = list()
+            anio = data["anio"]
+            sector = data["sector"]
+            subsector = data["subsector"]
+            nombre_tercero = data["nombre_tercero"]
+            self.query_params = {"anio": anio, "sector": sector}
+
             sql = """
-                SELECT * FROM dbo.proyecta_terceros_crecimiento WHERE anio = :anio AND sector = :sector AND estado = 1;
+                SELECT *, COUNT(*) OVER() AS total_registros
+                FROM dbo.proyecta_terceros_crecimiento 
+                WHERE anio = :anio AND sector = :sector AND estado = 1
             """
-            query = self.db.execute(text(sql), {"anio": data['anio'], "sector": data['sector']}).fetchall()
+            
+            if subsector:
+                sql += " AND subsector = :subsector"
+                self.query_params.update({"subsector": f"{subsector}"})
+            
+            if nombre_tercero:
+                sql += " AND nombre LIKE :nombre_tercero"
+                self.query_params.update({"nombre_tercero": f"%{nombre_tercero}%"})
+                
+            new_offset = self.obtener_limit(limit, position)
+            self.query_params.update({"offset": new_offset, "limit": limit})
+            sql = sql + " ORDER BY nombre ASC OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY;"
+            
+            print(f"este es el sql", sql)
+
+            query = self.db.execute(text(sql), self.query_params).fetchall()
+            if query:
+                cant_registros = query[0].total_registros
+
+                # Retornar directamente una lista de diccionarios
+                response = [
+                    {
+                        "id": key.id, 
+                        "anio": key.anio,
+                        "nit_real": key.nit_real,
+                        "nit": key.nit,
+                        "nombre": key.nombre,
+                        # "sector": key.sector,
+                        # "porcentaje_sector": key.porcentaje_sector,
+                        # "subsector": key.subsector,
+                        # "porcentaje_subsector": key.porcentaje_subsector,
+                        "porcentaje_cliente": key.porcentaje_cliente,
+                        "created_at": self.tools.format_date(str(key.created_at), "%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S") if str(key.created_at) else '',
+                    } for key in query] if query else []
+                
+                result = {"registros": response, "cant_registros": cant_registros}
+                
+            return result
+                
+        except Exception as ex:
+            print(str(ex))
+            raise CustomException(str(ex))
+        finally:
+            self.db.close()
+
+    # Función para obtener el limite de para paginar
+    def obtener_limit(self, limit: int, position: int):
+        offset = (position - 1) * limit
+        return offset
+
+    # Query para obtener los subsectores por sector.
+    def get_subsector_by_sector(self, data):
+        try:
+            sql = """
+                SELECT * FROM dbo.proyecta_sectores WHERE id_sector = :sector AND estado = 1;
+            """
+            query = self.db.execute(text(sql), {"sector": f"{data['sector']}"}).fetchall()
 
             # Retornar directamente una lista de diccionarios
             return [
                 {
-                    "id": key.id, 
-                    "anio": key.anio,
-                    "nit_real": key.nit_real,
-                    # "nit": key.nit,
-                    "nombre": key.nombre,
-                    # "sector": key.sector,
-                    # "porcentaje_sector": key.porcentaje_sector,
-                    # "subsector": key.subsector,
-                    # "porcentaje_subsector": key.porcentaje_subsector,
-                    "porcentaje_cliente": key.porcentaje_cliente,
-                    "created_at": self.tools.format_date(str(key.created_at), "%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S") if str(key.created_at) else '',
+                    "id_subsector": key.id_subsector, 
+                    "subsector": key.subsector.upper()
                 } for key in query] if query else []
                 
         except Exception as ex:
             print(str(ex))
             raise CustomException(str(ex))
+        finally:
+            self.db.close()
+
+    # Query para actualizar el porcentaje del subsector y cliente.
+    def actualizar_porcentaje_subsector_y_cliente(self, data: dict):
+        try:
+            sql = """
+                UPDATE dbo.proyecta_terceros_crecimiento
+                SET porcentaje_subsector = :porcentaje_subsector, porcentaje_cliente = :porcentaje_cliente
+                WHERE anio = :anio AND sector = :sector AND subsector = :subsector AND estado = 1;
+            """
+            self.db.execute(
+                text(sql), 
+                {
+                    "anio": int(data['anio']),
+                    "sector": str(data['sector']),
+                    "subsector": str(data['subsector']),
+                    "porcentaje_subsector": round(float(data['subsector_porcentaje']), 2),
+                    "porcentaje_cliente": round(float(data['subsector_porcentaje']), 2)
+                }
+            )
+            self.db.commit()               
+                
+        except Exception as ex:
+            print("Error al actualizar:", ex)
+            self.db.rollback()
+            raise CustomException("Error al actualizar.")
         finally:
             self.db.close()

@@ -155,6 +155,9 @@ class Sectores:
             # Actualizamos los subsectores en la base de datos.
             self.querys.actualizar_subsectores(data)
             
+            # Actualizamos el porcentaje de subsector y cliente en la base de datos.
+            self.querys.actualizar_porcentaje_subsector_y_cliente(data)
+            
             # Retornamos la información.
             return self.tools.output(200, "Datos actualizados.")
 
@@ -179,11 +182,61 @@ class Sectores:
     # Función para obtener los clientes registrados en la base de datos.
     def obtener_clientes(self, data):
         try:
-            # Obtenemos los clientes registrados en la base de datos.
+            
+            if data["position"] <= 0:
+                message = "El campo posición no es válido"
+                raise CustomException(message)
+
             clientes = self.querys.obtener_clientes(data)
+
+            registros = clientes["registros"]
+            cant_registros = clientes["cant_registros"]
+
+            if not registros:
+                message = "No hay listado de que mostrar."
+                return self.tools.output(200, message, data={
+                "total_registros": 0,
+                "total_pag": 0,
+                "posicion_pag": 0,
+                "registros": []
+            })
+
+            if cant_registros%data["limit"] == 0:
+                total_pag = cant_registros//data["limit"]
+            else:
+                total_pag = cant_registros//data["limit"] + 1
+
+            if total_pag < int(data["position"]):
+                message = "La posición excede el número total de registros."
+                return self.tools.output(200, message, data={
+                "total_registros": 0,
+                "total_pag": 0,
+                "posicion_pag": 0,
+                "registros": []
+            })
+
+            registros_dict = {
+                "total_registros": cant_registros,
+                "total_pag": total_pag,
+                "posicion_pag": data["position"],
+                "registros": registros
+            }
+
+            # Retornamos la información.
+            return self.tools.output(200, "Datos encontrados.", registros_dict)
+
+        except CustomException as e:
+            print(f"Error al guardar solicitud: {e}")
+            raise e
+
+    # Función para obtener los subsectores de un sector.
+    def get_subsector_by_sector(self, data):
+        try:
+            # Obtenemos los subsectores registrados en la base de datos.
+            subsectores = self.querys.get_subsector_by_sector(data)
             
             # Retornamos la información.
-            return self.tools.output(200, "Datos encontrados.", clientes)
+            return self.tools.output(200, "Datos encontrados.", subsectores)
 
         except CustomException as e:
             print(f"Error al guardar solicitud: {e}")
