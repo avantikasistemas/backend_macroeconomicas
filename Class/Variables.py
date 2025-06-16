@@ -27,14 +27,14 @@ class Variables:
             if ipc <= 0 or ipc > 100:
                 msg ='El IPC debe ser mayor que 0 y menor o igual a 100.'
                 raise CustomException(msg)
-            if pib <= 0 or devaluacion <= 0:
+            if pib <= 0:
                 msg ='Los valores deben ser mayores a 0.'
                 raise CustomException(msg)
             if salario <= 0:
                 msg ='El salario debe ser mayores a 0.'
                 raise CustomException(msg)
             if crecimiento_avantika <= 0 or crecimiento_avantika > 100:
-                msg ='El creccimiento debe ser mayor que 0 y menor o igual a 100.'
+                msg ='El crecimiento debe ser mayor que 0 y menor o igual a 100.'
                 raise CustomException(msg)
             if not fuente:
                 msg ='La fuente es obligatoria.'

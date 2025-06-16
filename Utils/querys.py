@@ -433,6 +433,7 @@ class Querys:
         finally:
             self.db.close()
 
+    # Query para actualizar los subsectores generales.
     def actualizar_subsectores_general(self, data: dict):
         try:
             sql = """
