@@ -71,8 +71,8 @@ class Sectores:
             sector_porcentaje = round(float(data['sector_porcentaje']), 2)
             
             # Validaciones
-            if sector_porcentaje <= 0 or sector_porcentaje > 100:
-                msg ='El sector porcentaje debe ser mayor que 0 y menor o igual a 100.'
+            if sector_porcentaje > 100:
+                msg ='El sector porcentaje debe ser menor o igual a 100.'
                 raise CustomException(msg)
 
             # Actualizamos los valores en la base de datos.
