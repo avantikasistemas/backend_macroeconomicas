@@ -22,7 +22,7 @@ app.include_router(variables_router)
 app.include_router(sectores_router)
 app.include_router(punto_equilibrio_router)
 
-BASE.metadata.create_all(bind=engine)
+BASE.metadata.create_all(bind=engine) 
 
 if __name__ == "__main__":
     import uvicorn
