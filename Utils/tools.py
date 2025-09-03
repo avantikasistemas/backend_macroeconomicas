@@ -93,6 +93,13 @@ class Tools:
         value = value.replace(",", "")
         valor_decimal = Decimal(value)
         return valor_decimal
+    
+    # Función para formatear a dinero peso
+    def formato_peso(self, valor):
+        try:
+            return "$ {:,.0f}".format(valor).replace(",", ".")
+        except:
+            return str(valor)
 
     # """ Obtener archivo"""
     # def get_file_b64(self, file_path):

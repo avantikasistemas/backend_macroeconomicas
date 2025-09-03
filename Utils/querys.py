@@ -636,3 +636,132 @@ class Querys:
             raise CustomException("Error al actualizar.")
         finally:
             self.db.close()
+
+    # Query para guardar los valores del punto de equilibrio.
+    def guardar_periodicidad(self, data: dict):
+        try:
+
+            if data['tipo_periodicidad'] == 1:
+                sql = """
+                    INSERT INTO dbo.proyecta_punto_equilibrio (anio, id_sector, tipo_periodicidad, mes, valor, created_at)
+                    VALUES (:anio, :id_sector, :tipo_periodicidad, :mes, :valor, :created_at);
+                """
+                self.db.execute(
+                    text(sql), 
+                    {
+                        "anio": int(data['anio']),
+                        "id_sector": str(data['sector']),
+                        "tipo_periodicidad": int(data['tipo_periodicidad']),
+                        "mes": int(data['mes']),
+                        "valor": round(float(data['valor']), 2),
+                        "created_at": datetime.now()
+                    }
+                )
+            if data['tipo_periodicidad'] == 2:
+                sql = """
+                    INSERT INTO dbo.proyecta_punto_equilibrio (anio, id_sector, tipo_periodicidad, mes, valor, created_at)
+                    VALUES (:anio, :id_sector, :tipo_periodicidad, :mes, :valor, :created_at);
+                """
+                self.db.execute(
+                    text(sql), 
+                    {
+                        "anio": int(data['anio']),
+                        "id_sector": str(data['sector']),
+                        "tipo_periodicidad": int(data['tipo_periodicidad']),
+                        "mes": int(data['trimestre']),
+                        "valor": round(float(data['valor']), 2),
+                        "created_at": datetime.now()
+                    }
+                )
+            self.db.commit()
+            
+            return True
+                
+        except Exception as ex:
+            print("Error al guardar:", ex)
+            self.db.rollback()
+            raise CustomException("Error al guardar.")
+        finally:
+            self.db.close()
+
+    # Query para consultar la información periódica del punto de equilibrio.
+    def consultar_informacion_periodica(self, data: dict):
+        try:
+            sql = """
+                SELECT ppe.id, ppe.anio, ppe.id_sector, ppe.tipo_periodicidad, ppe.mes, ppe.valor
+                FROM dbo.proyecta_punto_equilibrio ppe
+                WHERE ppe.id_sector = :id_sector AND ppe.tipo_periodicidad = :tipo_periodicidad
+                AND ppe.estado = 1
+                ORDER BY ppe.anio DESC, ppe.mes DESC;
+            """
+            result = self.db.execute(
+                text(sql),
+                {
+                    "id_sector": str(data['sector']),
+                    "tipo_periodicidad": int(data['tipo_periodicidad'])
+                }
+            ).fetchall()
+
+            # Retornar directamente una lista de diccionarios
+            meses_nombre = [
+                "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+            ]
+            trimestres_nombre = [
+                "Enero, Febrero, Marzo",
+                "Abril, Mayo, Junio",
+                "Julio, Agosto, Septiembre",
+                "Octubre, Noviembre, Diciembre"
+            ]
+            def get_nombre_mes(tipo_periodicidad, mes):
+                if tipo_periodicidad == 1:
+                    return meses_nombre[mes-1] if 1 <= mes <= 12 else ""
+                elif tipo_periodicidad == 2:
+                    return trimestres_nombre[mes-1] if 1 <= mes <= 4 else ""
+                return ""
+
+            return [
+                {
+                    "id": key.id, 
+                    "anio": key.anio,
+                    "id_sector": key.id_sector,
+                    "tipo_periodicidad": key.tipo_periodicidad,
+                    "tipo_periodicidad_nombre": "Mensual" if key.tipo_periodicidad == 1 else ("Trimestral" if key.tipo_periodicidad == 2 else ""),
+                    "mes": key.mes,
+                    "mes_nombre": get_nombre_mes(key.tipo_periodicidad, key.mes),
+                    "valor": key.valor,
+                    "valor_peso": self.tools.formato_peso(key.valor)
+                } for key in result] if result else []
+
+        except Exception as ex:
+            print("Error al consultar información periódica:", ex)
+            raise CustomException("Error al consultar información periódica.")
+        finally:
+            self.db.close()
+
+    # Query para verificar si ya existe un registro de periodicidad.
+    def check_si_existe_periodicidad(self, data):
+        try:
+            sql = """
+                SELECT * FROM dbo.proyecta_punto_equilibrio 
+                WHERE anio = :anio AND id_sector = :id_sector AND tipo_periodicidad = :tipo_periodicidad AND mes = :mes AND estado = 1;
+            """
+            query = self.db.execute(
+                text(sql), 
+                {
+                    "anio": int(data['anio']),
+                    "id_sector": str(data['sector']),
+                    "tipo_periodicidad": int(data['tipo_periodicidad']),
+                    "mes": int(data['mes']) if data['tipo_periodicidad'] == 1 else int(data['trimestre'])
+                }
+            ).fetchone()
+            if query:
+                raise CustomException("Ya existe un registro para ese mes y año.")
+                
+            return True
+                
+        except CustomException as ex:
+            print(str(ex))
+            raise CustomException(str(ex))
+        finally:
+            self.db.close()
