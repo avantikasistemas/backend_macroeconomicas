@@ -69,10 +69,15 @@ class Sectores:
         """ Api que realiza la consulta de los estados. """
         try:
             sector_porcentaje = round(float(data['sector_porcentaje']), 2)
+            hitrate = round(float(data['hitrate']), 2)
             
             # Validaciones
             if sector_porcentaje > 100:
                 msg ='El sector porcentaje debe ser menor o igual a 100.'
+                raise CustomException(msg)
+            
+            if hitrate > 100:
+                msg ='El hitrate debe ser menor o igual a 100.'
                 raise CustomException(msg)
 
             # Actualizamos los valores en la base de datos.

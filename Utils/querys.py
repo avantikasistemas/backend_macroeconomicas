@@ -142,8 +142,8 @@ class Querys:
     def guardar_valores(self, anio: int, data: dict):
         try:
             sql = """
-                INSERT INTO dbo.proyecta_sectores_porcentajes (anio, sector, sector_porcentaje, created_at)
-                VALUES (:anio, :sector, :sector_porcentaje, :fecha_ingreso);
+                INSERT INTO dbo.proyecta_sectores_porcentajes (anio, sector, sector_porcentaje, hitrate, created_at)
+                VALUES (:anio, :sector, :sector_porcentaje, :hitrate, :fecha_ingreso);
             """
             self.db.execute(
                 text(sql), 
@@ -151,6 +151,7 @@ class Querys:
                     "anio": anio,
                     "sector": str(data['concepto']),
                     "sector_porcentaje": round(float(data['porcentaje']), 2),
+                    "hitrate": round(float(data['hitrate']), 2),
                     "fecha_ingreso": datetime.now()
                 }
             )
@@ -207,6 +208,7 @@ class Querys:
                     "sector": key.sector,
                     "sector_nombre": key.sector_nombre,
                     "sector_porcentaje": key.sector_porcentaje,
+                    "hitrate": key.hitrate,
                     "created_at": self.tools.format_date(str(key.created_at), "%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S") if str(key.created_at) else '',
                 } for key in query] if query else []
                 
@@ -239,7 +241,7 @@ class Querys:
         try:
             sql = """
                 UPDATE dbo.proyecta_sectores_porcentajes
-                SET sector_porcentaje = :sector_porcentaje
+                SET sector_porcentaje = :sector_porcentaje, hitrate = :hitrate
                 WHERE id = :id AND anio = :anio AND sector = :sector AND estado = 1;
             """
             self.db.execute(
@@ -248,7 +250,8 @@ class Querys:
                     "id": int(data['id']),
                     "anio": int(data['anio']),
                     "sector": data['sector'],
-                    "sector_porcentaje": round(float(data['sector_porcentaje']), 2)
+                    "sector_porcentaje": round(float(data['sector_porcentaje']), 2),
+                    "hitrate": round(float(data['hitrate']), 2)
                 }
             )
             self.db.commit()               

@@ -20,4 +20,13 @@ app.add_middleware(
 app.include_router(variables_router)
 app.include_router(sectores_router)
 
-BASE.metadata.create_all(bind=engine)
+BASE.metadata.create_all(bind=engine) 
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8002,
+        reload=True
+    )
