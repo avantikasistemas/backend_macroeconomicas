@@ -42,4 +42,4 @@ COPY . .
 EXPOSE 8002
 
 # Comando de inicio
-CMD ["py", "main.py"]
+CMD ["python3", "main.py"]
